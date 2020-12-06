@@ -8,8 +8,10 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.navigation.fragment.findNavController
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import id.kharozim.firechat.databinding.FragmentLoginBinding
+import id.kharozim.firechat.models.UserModel
 import id.kharozim.firechat.utils.Constant
 import id.kharozim.firechat.utils.PreferencesHelper
 
@@ -18,6 +20,7 @@ class LoginFragment : Fragment() {
     private lateinit var binding: FragmentLoginBinding
     private val auth by lazy { Firebase.auth }
     private val sharepref by lazy { PreferencesHelper(requireContext()) }
+    private val db by lazy { Firebase.firestore }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -27,7 +30,7 @@ class LoginFragment : Fragment() {
         binding = FragmentLoginBinding.inflate(inflater, container, false).apply {
 
             btLogin.setOnClickListener {
-                if (tieEmail.text.isNullOrEmpty() && tiePassword.text.isNullOrEmpty()) {
+                if (tieEmail.text.isNullOrEmpty() || tiePassword.text.isNullOrEmpty()) {
                     Toast.makeText(
                         requireContext(),
                         "Email dan Password tidak boleh kosong",
@@ -42,15 +45,15 @@ class LoginFragment : Fragment() {
                         .addOnSuccessListener {
                             if (it.user?.isEmailVerified == true) {
                                 it.user?.uid?.let { uidKey ->
-                                    sharepref.put(Constant.PREF_UID_KEY, uidKey)
-                                    sharepref.put(Constant.PREF_IS_LOGIN, true)
-//                                    showMessage(sharepref.getString(Constant.PREF_UID_KEY).toString())
+                                    sharepref.uid = uidKey
+                                    showMessage(sharepref.uid)
+                                    findNavController().navigate(LoginFragmentDirections.actionLoginFragmentToHomeFragment())
+
                                 }
-                                findNavController().navigate(LoginFragmentDirections.actionLoginFragmentToHomeFragment())
                             } else {
                                 Toast.makeText(
                                     requireContext(),
-                                    "Email Belum di ferivikasi",
+                                    "Buka Emailmu.! Email Belum di ferivikasi",
                                     Toast.LENGTH_SHORT
                                 ).show()
                             }
@@ -68,7 +71,7 @@ class LoginFragment : Fragment() {
                 }
             }
             btSignup.setOnClickListener {
-                if (tieEmail.text.isNullOrEmpty() && tiePassword.text.isNullOrEmpty()) {
+                if (tieEmail.text.isNullOrEmpty() || tiePassword.text.isNullOrEmpty()) {
                     Toast.makeText(
                         requireContext(),
                         "Email dan Password tidak boleh kosong",
@@ -83,8 +86,13 @@ class LoginFragment : Fragment() {
                         .addOnSuccessListener {
                             it.user?.sendEmailVerification()
                             it.user?.uid?.let { uidKey ->
-                                sharepref.put(Constant.PREF_UID_KEY, uidKey)
-                                showMessage(sharepref.getString(Constant.PREF_UID_KEY).toString())
+                                sharepref.uid = uidKey
+//                                showMessage(sharepref.uid)
+                                db.collection(Constant.COLLECTION).document(uidKey)
+                                    .set(UserModel(uidKey, tieEmail.text.toString()))
+                                    .addOnSuccessListener {
+//                                        findNavController().navigate(LoginFragmentDirections.actionLoginFragmentToHomeFragment())
+                                    }
                             }
                             showMessage("${it.user?.email} berhasil registrasi.! silahkan cek email untuk ferivikasi")
                             showLoading(false)
@@ -104,12 +112,11 @@ class LoginFragment : Fragment() {
         return binding.root
     }
 
- /*   override fun onStart() {
-        super.onStart()
-        if(auth.currentUser != null && auth.currentUser?.isEmailVerified == true) {
-            findNavController().navigate(LoginFragmentDirections.actionLoginFragmentToHomeFragment())
-        }
-    }*/
+       override fun onStart() {
+           super.onStart()
+           if(sharepref.uid.isNotEmpty())
+               findNavController().navigate(LoginFragmentDirections.actionLoginFragmentToHomeFragment())
+       }
 
     private fun showLoading(isLoading: Boolean) {
         binding.pbLoading.visibility = if (isLoading) View.VISIBLE else View.INVISIBLE

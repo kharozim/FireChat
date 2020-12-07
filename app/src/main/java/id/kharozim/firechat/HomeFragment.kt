@@ -71,8 +71,8 @@ class HomeFragment : Fragment(), UserAdapter.UserListener {
         }
 
         FirebaseMessaging.getInstance().token.addOnSuccessListener {
-//            db.collection(Constant.COLLECTION).document(sharepref.uid)
-//                .update(mapOf("token" to it))
+            db.collection(Constant.COLLECTION).document(sharepref.uid)
+                .update(mapOf("token" to it))
             Log.e("TOKEN", it) }
 
         return binding.root

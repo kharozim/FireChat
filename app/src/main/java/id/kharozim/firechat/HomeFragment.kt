@@ -70,7 +70,10 @@ class HomeFragment : Fragment(), UserAdapter.UserListener {
             println(users.map { it.email })
         }
 
-        FirebaseMessaging.getInstance().token.addOnSuccessListener { Log.e("TOKEN", it) }
+        FirebaseMessaging.getInstance().token.addOnSuccessListener {
+//            db.collection(Constant.COLLECTION).document(sharepref.uid)
+//                .update(mapOf("token" to it))
+            Log.e("TOKEN", it) }
 
         return binding.root
     }
